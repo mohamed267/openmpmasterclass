@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include<omp.h>
-#define NUM_THREADS 6
-static long num_steps = 100000000;
+#define NUM_THREADS 3
+static long num_steps = 1000000000;
 double step = 0.0;
 int main ()
 {
    int nthreads , i ;
-    double sum[NUM_THREADS] , pi=0.0, x=0.0 , start = 0.0;
+    double  pi=0.0, x=0.0 , start = 0.0;
     step = 1.0 / num_steps;
 
     start =  omp_get_wtime();
@@ -14,23 +14,24 @@ int main ()
     #pragma omp parallel
     {
         int i ,id , nthrds;
+        double sum = 0.0;
         id = omp_get_thread_num();
         nthrds = omp_get_num_threads();
         if(id==0) nthreads = nthrds;
+        #pragma omp for  reduction(+:sum)
+            for(i=0; i<num_steps ; i+=1){
+                x = i* step;
+                sum += 4/(1+x*x);
+            }
 
-        for(i=id; i<num_steps ; i+=nthrds){
-            x = i* step;
-            sum[id] += 4/(1+x*x);
-        }
         
+        #pragma omp critical 
+            pi += sum * step;
 
     }
 
-    for(i==0 ;i< nthreads ; i++){
-        pi+= sum[i] * step;
-    }
     printf("time is :  %f \n "  , omp_get_wtime() -start);
     
-    printf("integrall is :  %f \n " ,pi);
+    printf("integrall is :  %f \n ", pi);
 
 }
